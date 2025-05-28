@@ -69,9 +69,9 @@ export const checkTeamDatasetLimit = async (teamId: string) => {
     }
   }
   // Open source check
-  if (!global.feConfigs.isPlus && datasetCount >= 30) {
-    return Promise.reject(SystemErrEnum.communityVersionNumLimit);
-  }
+  // if (!global.feConfigs.isPlus && datasetCount >= 30) {
+  //   return Promise.reject(SystemErrEnum.communityVersionNumLimit);
+  // }
 };
 
 export const checkTeamAppLimit = async (teamId: string, amount = 1) => {
