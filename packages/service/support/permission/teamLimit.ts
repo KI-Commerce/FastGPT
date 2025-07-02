@@ -10,62 +10,70 @@ import { TeamMemberStatusEnum } from '@fastgpt/global/support/user/team/constant
 import { getVectorCountByTeamId } from '../../common/vectorDB/controller';
 
 export const checkTeamAIPoints = async (teamId: string) => {
-  if (!global.subPlans?.standard) return;
+  // if (!global.subPlans?.standard) return;
+  //
+  // const { totalPoints, usedPoints } = await getTeamPoints({ teamId });
+  //
+  // if (usedPoints >= totalPoints) {
+  //   return Promise.reject(TeamErrEnum.aiPointsNotEnough);
+  // }
 
-  const { totalPoints, usedPoints } = await getTeamPoints({ teamId });
+  // return {
+  //   totalPoints,
+  //   usedPoints
+  // };
 
-  if (usedPoints >= totalPoints) {
-    return Promise.reject(TeamErrEnum.aiPointsNotEnough);
-  }
-
-  return {
-    totalPoints,
-    usedPoints
-  };
+    // 如果外部有用到 totalPoints/usedPoints，可返回一个固定值
+    return {
+        totalPoints: Infinity,
+        usedPoints: 0
+    };
 };
 
 export const checkTeamMemberLimit = async (teamId: string, newCount: number) => {
-  const [{ standardConstants }, memberCount] = await Promise.all([
-    getTeamStandPlan({
-      teamId
-    }),
-    MongoTeamMember.countDocuments({
-      teamId,
-      status: { $ne: TeamMemberStatusEnum.leave }
-    })
-  ]);
-
-  if (standardConstants && newCount + memberCount > standardConstants.maxTeamMember) {
-    return Promise.reject(TeamErrEnum.teamOverSize);
-  }
+  // const [{ standardConstants }, memberCount] = await Promise.all([
+  //   getTeamStandPlan({
+  //     teamId
+  //   }),
+  //   MongoTeamMember.countDocuments({
+  //     teamId,
+  //     status: { $ne: TeamMemberStatusEnum.leave }
+  //   })
+  // ]);
+  //
+  // if (standardConstants && newCount + memberCount > standardConstants.maxTeamMember) {
+  //   return Promise.reject(TeamErrEnum.teamOverSize);
+  // }
+    return;
 };
 
 export const checkTeamAppLimit = async (teamId: string, amount = 1) => {
-  const [{ standardConstants }, appCount] = await Promise.all([
-    getTeamStandPlan({ teamId }),
-    MongoApp.countDocuments({
-      teamId,
-      type: {
-        $in: [AppTypeEnum.simple, AppTypeEnum.workflow, AppTypeEnum.plugin, AppTypeEnum.tool]
-      }
-    })
-  ]);
-
-  if (standardConstants && appCount + amount >= standardConstants.maxAppAmount) {
-    return Promise.reject(TeamErrEnum.appAmountNotEnough);
-  }
-
-  // System check
-  if (global?.licenseData?.maxApps && typeof global?.licenseData?.maxApps === 'number') {
-    const totalApps = await MongoApp.countDocuments({
-      type: {
-        $in: [AppTypeEnum.simple, AppTypeEnum.workflow, AppTypeEnum.plugin, AppTypeEnum.tool]
-      }
-    });
-    if (totalApps >= global.licenseData.maxApps) {
-      return Promise.reject(SystemErrEnum.licenseAppAmountLimit);
-    }
-  }
+  // const [{ standardConstants }, appCount] = await Promise.all([
+  //   getTeamStandPlan({ teamId }),
+  //   MongoApp.countDocuments({
+  //     teamId,
+  //     type: {
+  //       $in: [AppTypeEnum.simple, AppTypeEnum.workflow, AppTypeEnum.plugin, AppTypeEnum.tool]
+  //     }
+  //   })
+  // ]);
+  //
+  // if (standardConstants && appCount + amount >= standardConstants.maxAppAmount) {
+  //   return Promise.reject(TeamErrEnum.appAmountNotEnough);
+  // }
+  //
+  // // System check
+  // if (global?.licenseData?.maxApps && typeof global?.licenseData?.maxApps === 'number') {
+  //   const totalApps = await MongoApp.countDocuments({
+  //     type: {
+  //       $in: [AppTypeEnum.simple, AppTypeEnum.workflow, AppTypeEnum.plugin, AppTypeEnum.tool]
+  //     }
+  //   });
+  //   if (totalApps >= global.licenseData.maxApps) {
+  //     return Promise.reject(SystemErrEnum.licenseAppAmountLimit);
+  //   }
+  // }
+    return;
 };
 
 export const checkDatasetIndexLimit = async ({
@@ -75,56 +83,58 @@ export const checkDatasetIndexLimit = async ({
   teamId: string;
   insertLen?: number;
 }) => {
-  const [{ standardConstants, totalPoints, usedPoints, datasetMaxSize }, usedDatasetIndexSize] =
-    await Promise.all([getTeamPlanStatus({ teamId }), getVectorCountByTeamId(teamId)]);
-
-  if (!standardConstants) return;
-
-  if (usedDatasetIndexSize + insertLen >= datasetMaxSize) {
-    return Promise.reject(TeamErrEnum.datasetSizeNotEnough);
-  }
-
-  if (usedPoints >= totalPoints) {
-    return Promise.reject(TeamErrEnum.aiPointsNotEnough);
-  }
+  // const [{ standardConstants, totalPoints, usedPoints, datasetMaxSize }, usedDatasetIndexSize] =
+  //   await Promise.all([getTeamPlanStatus({ teamId }), getVectorCountByTeamId(teamId)]);
+  //
+  // if (!standardConstants) return;
+  //
+  // if (usedDatasetIndexSize + insertLen >= datasetMaxSize) {
+  //   return Promise.reject(TeamErrEnum.datasetSizeNotEnough);
+  // }
+  //
+  // if (usedPoints >= totalPoints) {
+  //   return Promise.reject(TeamErrEnum.aiPointsNotEnough);
+  // }
   return;
 };
 
 export const checkTeamDatasetLimit = async (teamId: string) => {
-  const [{ standardConstants }, datasetCount] = await Promise.all([
-    getTeamStandPlan({ teamId }),
-    MongoDataset.countDocuments({
-      teamId,
-      type: { $ne: DatasetTypeEnum.folder }
-    })
-  ]);
-
-  // User check
-  if (standardConstants && datasetCount >= standardConstants.maxDatasetAmount) {
-    return Promise.reject(TeamErrEnum.datasetAmountNotEnough);
-  }
-
-  // System check
-  if (global?.licenseData?.maxDatasets && typeof global?.licenseData?.maxDatasets === 'number') {
-    const totalDatasets = await MongoDataset.countDocuments({
-      type: { $ne: DatasetTypeEnum.folder }
-    });
-    if (totalDatasets >= global.licenseData.maxDatasets) {
-      return Promise.reject(SystemErrEnum.licenseDatasetAmountLimit);
-    }
-  }
-  // Open source check
-  if (!global.feConfigs.isPlus && datasetCount >= 30) {
-    return Promise.reject(SystemErrEnum.communityVersionNumLimit);
-  }
+  // const [{ standardConstants }, datasetCount] = await Promise.all([
+  //   getTeamStandPlan({ teamId }),
+  //   MongoDataset.countDocuments({
+  //     teamId,
+  //     type: { $ne: DatasetTypeEnum.folder }
+  //   })
+  // ]);
+  //
+  // // User check
+  // if (standardConstants && datasetCount >= standardConstants.maxDatasetAmount) {
+  //   return Promise.reject(TeamErrEnum.datasetAmountNotEnough);
+  // }
+  //
+  // // System check
+  // if (global?.licenseData?.maxDatasets && typeof global?.licenseData?.maxDatasets === 'number') {
+  //   const totalDatasets = await MongoDataset.countDocuments({
+  //     type: { $ne: DatasetTypeEnum.folder }
+  //   });
+  //   if (totalDatasets >= global.licenseData.maxDatasets) {
+  //     return Promise.reject(SystemErrEnum.licenseDatasetAmountLimit);
+  //   }
+  // }
+  // // Open source check
+  // if (!global.feConfigs.isPlus && datasetCount >= 30) {
+  //   return Promise.reject(SystemErrEnum.communityVersionNumLimit);
+  // }
+  return;
 };
 
 export const checkTeamWebSyncPermission = async (teamId: string) => {
-  const { standardConstants } = await getTeamStandPlan({
-    teamId
-  });
-
-  if (standardConstants && !standardConstants?.permissionWebsiteSync) {
-    return Promise.reject(TeamErrEnum.websiteSyncNotEnough);
-  }
+  // const { standardConstants } = await getTeamStandPlan({
+  //   teamId
+  // });
+  //
+  // if (standardConstants && !standardConstants?.permissionWebsiteSync) {
+  //   return Promise.reject(TeamErrEnum.websiteSyncNotEnough);
+  // }
+  return;
 };
